@@ -62,7 +62,7 @@ def compute(df, strike_pct=0.05, barrier_pct=0.10, tenor_days=90, contract_size=
                     "Vanilla_USD":contract_size*v,"OutPut_USD":contract_size*o})
     return pd.DataFrame(out).set_index("End")
 
-st.title("PDO backtest (values in today's USD)")
+st.title("%premium of down-out put backtester")
 
 tickers = get_sp500()
 c0,c1,c2 = st.columns([1.4,1,1])
@@ -90,7 +90,7 @@ res["FV_Vanilla_USD"] = res["Vanilla_USD"] * factor_to_today.values
 st.subheader("Rolling Payoffs (today's USD per contract)")
 left,right = st.columns(2)
 with left:
-    ts = res[["FV_OutPut_USD","FV_Vanilla_USD"]].rename(columns={"FV_OutPut_USD":"Out-Put","FV_Vanilla_USD":"Vanilla"})
+    ts = res[["FV_OutPut_USD","FV_Vanilla_USD"]].rename(columns={"FV_OutPut_USD":"Down-and-Out Put","FV_Vanilla_USD":"Vanilla"})
     plot_df = ts.copy(); plot_df["End"] = plot_df.index
     long_df = plot_df.melt(id_vars="End",var_name="Type",value_name="Payoff")
     base = alt.Chart(long_df).encode(
@@ -100,9 +100,10 @@ with left:
         tooltip=[alt.Tooltip("End:T"),"Type:N",alt.Tooltip("Payoff:Q",format=",.0f")]
     )
     chart = (
-        base.transform_filter(alt.datum.Type=="Vanilla").mark_line(size=2) +
-        base.transform_filter(alt.datum.Type=="Out-Put").mark_line(size=2,strokeDash=[6,3]) +
-        base.transform_filter(alt.datum.Type=="Out-Put").mark_circle(size=26,opacity=0.6)
+            base.transform_filter(alt.datum.Type=="Vanilla").mark_line(size=2) +
+            base.transform_filter(alt.datum.Type=="Down-and-Out Put").mark_line(size=2,strokeDash=[6,3]) +
+            base.transform_filter(alt.datum.Type=="Down-and-Out Put").mark_circle(size=26,opacity=0.6)
+
     ).properties(height=280).interactive()
     st.altair_chart(chart,use_container_width=True)
 with right:
@@ -124,7 +125,7 @@ st.dataframe(show[["Start","S0","K","B","ST","KO","FV_OutPut_USD","FV_Vanilla_US
 st.subheader("Average Relative Value (today's USD)")
 avg_out = res["FV_OutPut_USD"].mean(); avg_van = res["FV_Vanilla_USD"].mean()
 ratio = (avg_out/avg_van) if avg_van>0 else np.nan
-summ = pd.DataFrame({"Avg Out-Put (USD/contract)":[avg_out],
+summ = pd.DataFrame({"Avg Down-out Put (USD/contract)":[avg_out],
                      "Avg Vanilla (USD/contract)":[avg_van],
-                     "Out/Vanilla Ratio":[ratio]}).T
+                     "DOP/Vanilla Ratio":[ratio]}).T
 st.table(summ.style.format("{:,.2f}"))
